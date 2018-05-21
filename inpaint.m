@@ -1,4 +1,4 @@
-function [ sol ] = inpaint( imname, cut, extinction, adjacency)
+function [ sol ] = inpaint( imname, cut, extinction, adjacency, psize )
 %INPAINT Retrieve the missing pixels of an image.
 %   Usage :
 %       vertices = giin_image('vertical'); 
@@ -7,9 +7,9 @@ function [ sol ] = inpaint( imname, cut, extinction, adjacency)
 %   Input parameters :
 %       imname    : name of the image file
 %       cut       : parameter used in watershed
-%       extinction: accepted values are: 'areas', 'dynamics' or 'volumes'
+%       extinction: 'areas', 'dynamics', 'volumes' or 'superpixels'
 %       adjacency : adjancency used in neighborhood functions 
-%       
+%       psize     : patch size
 %
 %   Output parameters :
 %       sol    : the inpainted image
@@ -49,16 +49,18 @@ unknown = -1e3;
 img(mask) = unknown;
 
 %% Inpainting algorithm
-gparam = giin_default_parameters();
+gparam = giin_default_parameters(psize);
 
 % Check if there's a file with the graph to make execution faster 
-varfile = ['var/', imname, '.mat'];
+varfile = ['var/', imname, '_p', num2str(psize), '.mat'];
 
 if (exist(varfile) == 2)
+    disp("Patch graph file founded, loading...");
     load(varfile);
 else
+    disp("Patch graph file doesn't exist, creating...")
     [G, pixels, patches] = giin_patch_graph(img, gparam, false);
-    save(['var/', imname], 'G', 'pixels', 'patches');
+    save(['var/', imname '_p', num2str(psize)], 'G', 'pixels', 'patches');
 end
 
 [r1, c1] = maskhelper(img1);
@@ -74,9 +76,10 @@ end
 
 %% Results saving
 
-%save(['var/', imname, '_', cut, '_', extinction, '_', num2str(adjacency), '_inpainted']);
+% Uncomment the line below to save entire workspace after processing.
+% save(['var/', imname, '_', cut, '_', extinction, '_', num2str(adjacency), '_inpainted']);
 
-filename = ['/home/ericribeiro/Documents/MATLAB/Deferrard/results/', imname, '_', cut, '_', extinction, '_', num2str(adjacency)];
+filename = ['/home/ericribeiro/Documents/MATLAB/Deferrard/results/', imname, '_', cut, '_', extinction, '_', num2str(adjacency), '_p', num2str(psize)];
 
 imwrite(reshape(sol,size(img)), ...
     [filename, '_inpainted.png'], 'png');
